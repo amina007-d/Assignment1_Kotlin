@@ -2,15 +2,16 @@ import java.util.Scanner
 
 data class Contact(
     val id: Int,
-    val info: Triple<String, String, String?>
+    val name: String,
+    val phone: String,
+    val email: String?
 )
 
 fun main() {
     val scanner = Scanner(System.`in`)
 
-    val contacts = mutableListOf<Contact>()
-    val contactMap = mutableMapOf<Int, Contact>()
-    val phoneSet = mutableSetOf<String>()
+    val contactsById = mutableMapOf<Int, Contact>()
+    val contactsByPhone = mutableMapOf<String, Contact>()
 
     var nextId = 1
 
@@ -18,10 +19,10 @@ fun main() {
         printMenu()
 
         when (scanner.nextLine().trim()) {
-            "1" -> nextId = addContact(scanner, contacts, contactMap, phoneSet, nextId)
-            "2" -> showContacts(contacts)
-            "3" -> findContact(scanner, contacts)
-            "4" -> removeByPhone(scanner, contacts, contactMap, phoneSet)
+            "1" -> nextId = addContact(scanner, contactsById, contactsByPhone, nextId)
+            "2" -> showContacts(contactsById)
+            "3" -> findContact(scanner, contactsById)
+            "4" -> removeByPhone(scanner, contactsById, contactsByPhone)
             "5" -> {
                 println("Exiting program.")
                 return
@@ -34,7 +35,7 @@ fun main() {
 fun printMenu() {
     println(
         """
-        |Contact Manager 
+        |Contact Manager
         |1. Add contact
         |2. View all contacts
         |3. Find contact by name
@@ -47,9 +48,8 @@ fun printMenu() {
 
 fun addContact(
     scanner: Scanner,
-    contacts: MutableList<Contact>,
-    contactMap: MutableMap<Int, Contact>,
-    phoneSet: MutableSet<String>,
+    contactsById: MutableMap<Int, Contact>,
+    contactsByPhone: MutableMap<String, Contact>,
     nextId: Int
 ): Int {
 
@@ -59,56 +59,50 @@ fun addContact(
     print("Enter phone number: ")
     val phone = scanner.nextLine().trim()
 
-    if (!phoneSet.add(phone)) {
+    if (contactsByPhone.containsKey(phone)) {
         println("This phone number already exists.")
         return nextId
     }
 
     print("Enter email (optional): ")
-    val emailInput = scanner.nextLine().trim()
-    val email = emailInput.ifEmpty { null }
+    val email = scanner.nextLine().trim().ifEmpty { null }
 
-    val contact = Contact(
-        id = nextId,
-        info = Triple(name, phone, email)
-    )
+    val contact = Contact(nextId, name, phone, email)
 
-    contacts.add(contact)
-    contactMap[nextId] = contact
+    contactsById[nextId] = contact
+    contactsByPhone[phone] = contact
 
     println("Contact added with ID $nextId")
     return nextId + 1
 }
 
-fun showContacts(contacts: List<Contact>) {
-    if (contacts.isEmpty()) {
+fun showContacts(contactsById: Map<Int, Contact>) {
+    if (contactsById.isEmpty()) {
         println("No contacts found.")
         return
     }
 
-    contacts.forEach {
-        val (name, phone, email) = it.info
+    contactsById.values.forEach {
         println(
-            "ID: ${it.id}, Name: $name, Phone: $phone, Email: ${email ?: "Not provided"}"
+            "ID: ${it.id}, Name: ${it.name}, Phone: ${it.phone}, Email: ${it.email ?: "Not provided"}"
         )
     }
 }
 
-fun findContact(scanner: Scanner, contacts: List<Contact>) {
+fun findContact(scanner: Scanner, contactsById: Map<Int, Contact>) {
     print("Enter name to search: ")
     val query = scanner.nextLine().trim().lowercase()
 
-    val results = contacts.filter {
-        it.info.first.lowercase().contains(query)
+    val results = contactsById.values.filter {
+        it.name.lowercase().contains(query)
     }
 
     if (results.isEmpty()) {
         println("No matching contacts.")
     } else {
         results.forEach {
-            val (name, phone, email) = it.info
             println(
-                "ID: ${it.id}, Name: $name, Phone: $phone, Email: ${email ?: "Not provided"}"
+                "ID: ${it.id}, Name: ${it.name}, Phone: ${it.phone}, Email: ${it.email ?: "Not provided"}"
             )
         }
     }
@@ -116,19 +110,21 @@ fun findContact(scanner: Scanner, contacts: List<Contact>) {
 
 fun removeByPhone(
     scanner: Scanner,
-    contacts: MutableList<Contact>,
-    contactMap: MutableMap<Int, Contact>,
-    phoneSet: MutableSet<String>
+    contactsById: MutableMap<Int, Contact>,
+    contactsByPhone: MutableMap<String, Contact>
 ) {
     print("Enter phone number to remove: ")
     val phone = scanner.nextLine().trim()
 
-    val contact = contacts.find { it.info.second == phone }
+    val contact = contactsByPhone[phone]
 
-    contact?.let {
-        contacts.remove(it)
-        contactMap.remove(it.id)
-        phoneSet.remove(phone)
-        println("Contact removed.")
-    } ?: println("Contact not found.")
+    if (contact == null) {
+        println("Contact not found.")
+        return
+    }
+
+    contactsByPhone.remove(phone)
+    contactsById.remove(contact.id)
+
+    println("Contact removed.")
 }
