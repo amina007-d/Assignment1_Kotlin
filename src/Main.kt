@@ -1,5 +1,3 @@
-import java.util.Scanner
-
 data class Contact(
     val id: Int,
     val name: String,
@@ -8,7 +6,6 @@ data class Contact(
 )
 
 fun main() {
-    val scanner = Scanner(System.`in`)
 
     val contactsById = mutableMapOf<Int, Contact>()
     val contactsByPhone = mutableMapOf<String, Contact>()
@@ -18,11 +15,11 @@ fun main() {
     while (true) {
         printMenu()
 
-        when (scanner.nextLine().trim()) {
-            "1" -> nextId = addContact(scanner, contactsById, contactsByPhone, nextId)
+        when (readLine()?.trim()) {
+            "1" -> nextId = addContact(contactsById, contactsByPhone, nextId)
             "2" -> showContacts(contactsById)
-            "3" -> findContact(scanner, contactsById)
-            "4" -> removeByPhone(scanner, contactsById, contactsByPhone)
+            "3" -> findContact(contactsById)
+            "4" -> removeByPhone(contactsById, contactsByPhone)
             "5" -> {
                 println("Exiting program.")
                 return
@@ -47,25 +44,39 @@ fun printMenu() {
 }
 
 fun addContact(
-    scanner: Scanner,
     contactsById: MutableMap<Int, Contact>,
     contactsByPhone: MutableMap<String, Contact>,
     nextId: Int
 ): Int {
 
     print("Enter name: ")
-    val name = scanner.nextLine().trim()
+    val name = readLine()?.trim().orEmpty()
 
-    print("Enter phone number: ")
-    val phone = scanner.nextLine().trim()
+    var phone: String
+    while (true) {
+        print("Enter phone number (digits only): ")
+        phone = readLine()?.trim().orEmpty()
 
-    if (contactsByPhone.containsKey(phone)) {
-        println("This phone number already exists.")
-        return nextId
+        if (phone.isEmpty()) {
+            println("Phone number cannot be empty.")
+            continue
+        }
+
+        if (!phone.all { it.isDigit() }) {
+            println("Phone number must contain digits only.")
+            continue
+        }
+
+        if (contactsByPhone.containsKey(phone)) {
+            println("This phone number already exists.")
+            return nextId
+        }
+
+        break
     }
 
     print("Enter email (optional): ")
-    val email = scanner.nextLine().trim().ifEmpty { null }
+    val email = readLine()?.trim().takeIf { !it.isNullOrEmpty() }
 
     val contact = Contact(nextId, name, phone, email)
 
@@ -75,6 +86,7 @@ fun addContact(
     println("Contact added with ID $nextId")
     return nextId + 1
 }
+
 
 fun showContacts(contactsById: Map<Int, Contact>) {
     if (contactsById.isEmpty()) {
@@ -89,9 +101,9 @@ fun showContacts(contactsById: Map<Int, Contact>) {
     }
 }
 
-fun findContact(scanner: Scanner, contactsById: Map<Int, Contact>) {
+fun findContact(contactsById: Map<Int, Contact>) {
     print("Enter name to search: ")
-    val query = scanner.nextLine().trim().lowercase()
+    val query = readLine()?.trim()?.lowercase().orEmpty()
 
     val results = contactsById.values.filter {
         it.name.lowercase().contains(query)
@@ -109,12 +121,11 @@ fun findContact(scanner: Scanner, contactsById: Map<Int, Contact>) {
 }
 
 fun removeByPhone(
-    scanner: Scanner,
     contactsById: MutableMap<Int, Contact>,
     contactsByPhone: MutableMap<String, Contact>
 ) {
     print("Enter phone number to remove: ")
-    val phone = scanner.nextLine().trim()
+    val phone = readLine()?.trim().orEmpty()
 
     val contact = contactsByPhone[phone]
 
